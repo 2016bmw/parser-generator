@@ -131,31 +131,28 @@
 ;; ("parse-tree" (("kitty") ("kitty") ("kitty") ("kitty")))
 ;; ;Value: #f
 
-((lambda ()
-   (define pattern
-     (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
-		      (p:choice (p:string "c") (p:string "d")))
-	       3 #f))
-   (pattern "acadbcbc" try-match)))
+(let ((pattern
+       (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
+                        (p:choice (p:string "c") (p:string "d")))
+                 3 #f)))
+  (pattern "acadbcbc" try-match))
 ;; ("parse-tree" ((("a") ("c")) (("a") ("d")) (("b") ("c"))))
 ;; ("parse-tree" ((("a") ("c")) (("a") ("d")) (("b") ("c")) (("b") ("c"))))
 ;; ;Value: #f
 
-((lambda ()
-   (define pattern
-     (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
-		      (p:choice (p:string "c") (p:string "d")))
-	       3 #f))
-   (pattern "cacadbcbc" try-match)))
+(let ((pattern
+       (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
+                        (p:choice (p:string "c") (p:string "d")))
+                 3 #f)))
+  (pattern "cacadbcbc" try-match))
 ;; Value: #f
 
-((lambda ()
-   (define pattern
-     (p:rule 'test-rule
-	     (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
-			      (p:choice (p:string "c") (p:string "d")))
-		       3 #f)))
-   (pattern "acadbcbc" try-match)))
+(let ((pattern
+       (p:rule 'test-rule
+               (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
+                                (p:choice (p:string "c") (p:string "d")))
+                         3 #f))))
+  (pattern "acadbcbc" try-match))
 ;; ("parse-tree" (test-rule (("a") ("c")) (("a") ("d")) (("b") ("c"))))
 ;; ("parse-tree"
 ;;  (test-rule (("a") ("c")) (("a") ("d")) (("b") ("c")) (("b") ("c"))))
