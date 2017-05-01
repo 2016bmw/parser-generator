@@ -76,11 +76,11 @@
 #| 
 
 ((p:string "a") "a" try-match)
-("a")
+("parse-tree" ("a"))
 ;Value: #f
 
 ((p:string "a") "ab" try-match)
-("a")
+("parse-tree" ("a"))
 ;Value: #f
 
 ((p:string "abc") "ab" try-match)
