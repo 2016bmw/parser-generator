@@ -49,14 +49,20 @@
                                               (string-length cur-data))))
               (pattern cur-data
                        (lambda (parse-tree num-consumed)
-                         ;; TODO: every repeat has to consume a
-                         ;; character. FIX THIS.
-                         (and (> num-consumed 0)
-                              (lp (+ i 1)
-                                  (substring cur-data num-consumed
-                                             (string-length cur-data))
-                                  (append cur-parse-tree
-                                          (list parse-tree))))))))))
+                         ;; P:REPEAT has weird behavior when the base pattern
+                         ;; matches an empty string.
+                         ;; TODO clarify what the behavior *should* be.
+                         (cond
+                          ((zero? num-consumed)
+                           (and (>= i min)
+                                (success (append cur-parse-tree (list parse-tree)) num-consumed)))
+                          ((positive? num-consumed)
+                           (lp (+ i 1)
+                               (substring cur-data num-consumed
+                                          (string-length cur-data))
+                               (append cur-parse-tree
+                                       (list parse-tree))))
+                          (else #f))))))))
   repeat-match)
 
 
