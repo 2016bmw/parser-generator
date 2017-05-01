@@ -3,99 +3,99 @@
     (define (string-match data success)
       ;; (pp (list "string-match" string data))
       (and (>= (string-length data) str-len)
-	   (string=? string (substring data 0 str-len))
-	   (success (list string) str-len)))
+           (string=? string (substring data 0 str-len))
+           (success (list string) str-len)))
     string-match))
-    
+
 
 (define (p:seq . args)
   (define (seq-match data success)
     (let lp ((lst args)
-	     (cur-data data)
-	     (cur-parse-tree (list)))
+             (cur-data data)
+             (cur-parse-tree (list)))
       ;; (pp (list "data " cur-data))
       (cond ((pair? lst)
-	     ((car lst) cur-data 
-			 (lambda (parse-tree num-consumed)
-			   ;; (pp parse-tree)
-			   ;; (pp num-consumed)
-			   (lp (cdr lst)
-			       (substring cur-data num-consumed (string-length cur-data))
-			       (append cur-parse-tree (list parse-tree))))))
-	    ((null? lst)
-	     (success cur-parse-tree (- (string-length data) (string-length cur-data))))
-	    (else (error "Should not get here!")))))
+             ((car lst) cur-data
+              (lambda (parse-tree num-consumed)
+                ;; (pp parse-tree)
+                ;; (pp num-consumed)
+                (lp (cdr lst)
+                    (substring cur-data num-consumed (string-length cur-data))
+                    (append cur-parse-tree (list parse-tree))))))
+            ((null? lst)
+             (success cur-parse-tree (- (string-length data) (string-length cur-data))))
+            (else (error "Should not get here!")))))
   seq-match)
 
 (define (p:choice . args)
   (define (choice-match data success)
     (let lp ((lst args))
       (cond ((pair? lst)
-	     (or ((car lst) data success)
-		 (lp (cdr lst))))
-	     ((null? lst) #f)
-	     (else (error "Should not get here (p:choice)")))))
+             (or ((car lst) data success)
+                 (lp (cdr lst))))
+            ((null? lst) #f)
+            (else (error "Should not get here (p:choice)")))))
   choice-match)
 
 (define (p:repeat pattern min max)
   (define (repeat-match data success)
     (let lp ((i 0)
-	     (cur-data data)
-	     (cur-parse-tree (list)))
+             (cur-data data)
+             (cur-parse-tree (list)))
       (if (and max (> i max))
-	  #f
-	  (or (and (>= i min)
-		   (success cur-parse-tree (- (string-length data)
-					      (string-length cur-data))))
-	      (pattern cur-data
-		       (lambda (parse-tree num-consumed)
-			 ;; TODO: every repeat has to consume a
-			 ;; character. FIX THIS.
-			 (and (> num-consumed 0)
-			      (lp (+ i 1) 
-				  (substring cur-data num-consumed
-					     (string-length cur-data))
-				  (append cur-parse-tree
-					  (list parse-tree))))))))))
+          #f
+          (or (and (>= i min)
+                   (success cur-parse-tree (- (string-length data)
+                                              (string-length cur-data))))
+              (pattern cur-data
+                       (lambda (parse-tree num-consumed)
+                         ;; TODO: every repeat has to consume a
+                         ;; character. FIX THIS.
+                         (and (> num-consumed 0)
+                              (lp (+ i 1)
+                                  (substring cur-data num-consumed
+                                             (string-length cur-data))
+                                  (append cur-parse-tree
+                                          (list parse-tree))))))))))
   repeat-match)
 
 
 (define (p:rule name matcher)
   (define (rule-matcher data success)
     (matcher data
-	     (lambda (parse-tree num-consumed)
-	       (success (cons name parse-tree) num-consumed))))
+             (lambda (parse-tree num-consumed)
+               (success (cons name parse-tree) num-consumed))))
   rule-matcher)
-	     
+
 ;;; Tesst
 
 (define (try-match parse-tree num-consumed)
   (pp (list "parse-tree" parse-tree))
   #f)
 
-#| 
+#|
 
 ((p:string "a") "a" try-match)
 ("parse-tree" ("a"))
-;Value: #f
+;Value: #f                              ;
 
 ((p:string "a") "ab" try-match)
 ("parse-tree" ("a"))
-;Value: #f
+;Value: #f                              ;
 
 ((p:string "abc") "ab" try-match)
-;Value: #f
+;Value: #f                              ;
 
 ((p:string "b") "ab" try-match)
-;Value: #f
+;Value: #f                              ;
 
 ((p:seq (p:string "hello") (p:string "kitty")) "hellokitty" try-match)
-;("parse-tree" (("hello") ("kitty")))
-;Value: #f
+;("parse-tree" (("hello") ("kitty")))   ;
+;Value: #f                              ;
 
 ((p:choice (p:string "hello") (p:string "kitty")) "hello" try-match)
 ("parse-tree" ("hello"))
-;Value #f
+;Value #f                               ;
 
 ((p:repeat (p:string "a") 1 1) "a" try-match)
 ;; ("parse-tree" (("a")))
@@ -117,7 +117,7 @@
 ;; ;Value: #f
 
 ((p:repeat (p:string "a") 3 4) "aaba" try-match)
-;Value: #f
+;Value: #f                              ;
 
 ((p:repeat (p:string "a") 1 #f) "aaba" try-match)
 ;; ("parse-tree" (("a")))
