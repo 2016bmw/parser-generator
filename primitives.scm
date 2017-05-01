@@ -73,7 +73,15 @@
                (success (cons name parse-tree) num-consumed))))
   rule-matcher)
 
-;;; Tesst
+;; P:DELAYED takes a promise that will return a matcher, and returns a matcher
+;; that just forces the promise and invokes the matcher returned from it. It
+;; exists solely to break cyclic dependencies between grammar rules.
+(define (p:delayed matcher)
+  (define (delayed-matcher data success)
+    ((force matcher) data success))
+  delayed-matcher)
+
+;;; Tests
 
 (define (try-match parse-tree num-consumed)
   (pp (list "parse-tree" parse-tree))
