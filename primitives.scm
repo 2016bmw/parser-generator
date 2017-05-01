@@ -81,6 +81,14 @@
     ((force matcher) data success))
   delayed-matcher)
 
+(define (p:transform f matcher)
+  (define (transform-matcher data success)
+    (matcher data
+             (lambda (parse-tree num-consumed)
+               (success (f parse-tree)
+                        num-consumed))))
+    transform-matcher)
+
 ;;; Tests
 
 (define (try-match parse-tree num-consumed)

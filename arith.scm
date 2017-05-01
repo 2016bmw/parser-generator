@@ -15,9 +15,16 @@
    (p:string "8")
    (p:string "9")))
 
+(define number-rule
+  (p:rule 'number
+          (p:transform
+           (lambda (digits)
+             (let ((string (apply string-append (apply append digits))))
+               (string->number string)))
+           (p:repeat p:digit 1 #f))))
+
 (define arithmetic-grammar
-  (letrec* ((number-rule (p:rule 'number (p:repeat p:digit 1 #f)))
-            (addend-rule
+  (letrec* ((addend-rule
              (p:choice number-rule
                        (p:seq (p:string "(")
                               (p:delayed (delay expr-rule))
@@ -34,7 +41,7 @@
 
 #|
 (arithmetic-grammar "1+2" try-match)
-;; ("parse-tree" (expr sum (number ("1")) ()))
-;; ("parse-tree" (expr sum (number ("1")) ((("+") (number ("2"))))))
+;; ("parse-tree" (expr sum (number . 1) ()))
+;; ("parse-tree" (expr sum (number . 1) ((("+") (number . 2)))))
 ;; ;Value: #f
 |#
