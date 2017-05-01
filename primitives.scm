@@ -21,9 +21,9 @@
                 ;; (pp num-consumed)
                 (lp (cdr lst)
                     (substring cur-data num-consumed (string-length cur-data))
-                    (append cur-parse-tree (list parse-tree))))))
+                    (cons parse-tree cur-parse-tree)))))
             ((null? lst)
-             (success cur-parse-tree (- (string-length data) (string-length cur-data))))
+             (success (reverse cur-parse-tree) (- (string-length data) (string-length cur-data))))
             (else (error "Should not get here!")))))
   seq-match)
 
