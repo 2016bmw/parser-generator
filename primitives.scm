@@ -52,6 +52,22 @@
                          ;; P:REPEAT has weird behavior when the base pattern
                          ;; matches an empty string.
                          ;; TODO clarify what the behavior *should* be.
+			 (define (loop-again)
+			   (lp (+ i 1)
+			       (substring cur-data num-consumed (string-length cur-data))
+			       (append cur-parse-tree (list parse-tree))))
+
+			 (if (zero? num-consumed)
+			     (if (string=? cur-data data) ; haven't consumed any part of original string
+				 (if (>= (+ i 1) min)
+				     (success (append cur-parse-tree (list parse-tree)) num-consumed)
+				     (loop-again))
+				 #f) ; never try to put an empty string after non-empty matches
+			     (if (and (> i 0) (string=? cur-data data)) ; current match is not empty, but there has previously been at least one empty match
+				 #f
+				 (loop-again)))))))))
+  repeat-match)
+#|
                          (cond
                           ((zero? num-consumed)
                            (and (>= i min)
@@ -63,8 +79,9 @@
                                (append cur-parse-tree
                                        (list parse-tree))))
                           (else #f))))))))
-  repeat-match)
 
+  repeat-match)
+|#
 
 (define (p:rule name matcher)
   (define (rule-matcher data success)
@@ -152,6 +169,37 @@
 ;; ("parse-tree" (("kitty") ("kitty") ("kitty")))
 ;; ("parse-tree" (("kitty") ("kitty") ("kitty") ("kitty")))
 ;; ;Value: #f
+
+
+((p:repeat (p:choice (p:string "") (p:string "x")) 3 5) "xxxx" try-match)
+;; ("parse-tree" (("") ("") ("")))
+;; ("parse-tree" (("x") ("x") ("x")))
+;; ("parse-tree" (("x") ("x") ("x") ("x")))
+;; ;Value: #f
+
+((p:repeat (p:choice (p:string "") (p:string "x")) 3 #f) "xxxx" try-match)
+;; ("parse-tree" (("") ("") ("")))
+;; ("parse-tree" (("x") ("x") ("x")))
+;; ("parse-tree" (("x") ("x") ("x") ("x")))
+;; ;Value: #f
+
+((p:repeat (p:choice (p:string "") (p:string "x")) 0 #f) "xxxx" try-match)
+;; ("parse-tree" ())
+;; ("parse-tree" (("")))
+;; ("parse-tree" (("x")))
+;; ("parse-tree" (("x") ("x")))
+;; ("parse-tree" (("x") ("x") ("x")))
+;; ("parse-tree" (("x") ("x") ("x") ("x")))
+;; ;Value: #f
+
+((p:seq (p:repeat (p:choice (p:string "") (p:string "x")) 0 #f) (p:string "y")) "z" try-match)
+;; ;Value: #f
+
+((p:seq (p:repeat (p:choice (p:string "") (p:string "x")) 0 #f) (p:string "z")) "z" try-match)
+("parse-tree" (() ("z")))
+("parse-tree" ((("")) ("z")))
+;; ;Value: #f
+
 
 (let ((pattern
        (p:repeat (p:seq (p:choice (p:string "a") (p:string "b"))
