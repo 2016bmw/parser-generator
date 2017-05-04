@@ -7,6 +7,14 @@
            (success (list string) str-len)))
     string-match))
 
+(define (p:char-from string)
+    (define (char-from-matcher data success)
+      (let ((choices (string->list string))
+	    (data-list (string->list data)))
+	(and (not (null? data-list))
+	     (memq (car data-list) choices)
+	     (success (list (car (string->list data))) 1))))
+    char-from-matcher)
 
 (define (p:seq . args)
   (define (seq-match data success)
@@ -82,6 +90,19 @@
 
   repeat-match)
 |#
+
+;;; Convenience combinators
+
+(define (p:+ matcher)
+  (p:repeat matcher 1 #f))
+
+(define (p:? matcher)
+  (p:repeat matcher 0 1))
+
+(define (p:* matcher)
+  (p:repeat matcher 0 #f))
+
+;;; Definition for named rule
 
 (define (p:rule name matcher)
   (define (rule-matcher data success)
@@ -226,6 +247,47 @@
 ;; ("parse-tree" (test-rule (("a") ("c")) (("a") ("d")) (("b") ("c"))))
 ;; ("parse-tree"
 ;;  (test-rule (("a") ("c")) (("a") ("d")) (("b") ("c")) (("b") ("c"))))
+;; ;Value: #f
+
+((p:char-from "abc") "abc" try-match)
+;; ("parse-tree" (#\a))
+;; ;Value: #f
+
+((p:char-from "abc") "bbc" try-match)
+;; ("parse-tree" (#\b))
+;; ;Value: #f
+
+((p:char-from "abc") "xbc" try-match)
+;; ;Value: #f
+
+(let ((pattern
+       (p:rule 'test-rule
+               (p:* (p:seq (p:choice (p:string "a") (p:string "b"))
+			   (p:choice (p:string "c") (p:string "d")))))))
+  (pattern "adadbc" try-match))
+;; ("parse-tree" (test-rule))
+;; ("parse-tree" (test-rule (("a") ("d"))))
+;; ("parse-tree" (test-rule (("a") ("d")) (("a") ("d"))))
+;; ("parse-tree" (test-rule (("a") ("d")) (("a") ("d")) (("b") ("c"))))
+;; ;Value: #f
+
+(let ((pattern
+       (p:rule 'test-rule
+               (p:+ (p:seq (p:choice (p:string "a") (p:string "b"))
+			   (p:choice (p:string "c") (p:string "d")))))))
+  (pattern "adadbc" try-match))
+;; ("parse-tree" (test-rule (("a") ("d"))))
+;; ("parse-tree" (test-rule (("a") ("d")) (("a") ("d"))))
+;; ("parse-tree" (test-rule (("a") ("d")) (("a") ("d")) (("b") ("c"))))
+;; ;Value: #f
+
+(let ((pattern
+       (p:rule 'test-rule
+               (p:? (p:seq (p:choice (p:string "a") (p:string "b"))
+			   (p:choice (p:string "c") (p:string "d")))))))
+  (pattern "adadbc" try-match))
+;; ("parse-tree" (test-rule))
+;; ("parse-tree" (test-rule (("a") ("d"))))
 ;; ;Value: #f
 
 |#
