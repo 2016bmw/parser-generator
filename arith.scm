@@ -3,17 +3,7 @@
 ;;; Arithmetic Grammar Example
 
 (define p:digit
-  (p:choice
-   (p:string "0")
-   (p:string "1")
-   (p:string "2")
-   (p:string "3")
-   (p:string "4")
-   (p:string "5")
-   (p:string "6")
-   (p:string "7")
-   (p:string "8")
-   (p:string "9")))
+  (p:char-from "0123456789"))
 
 (define number-rule
   (p:rule 'number

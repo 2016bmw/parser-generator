@@ -7,14 +7,14 @@
            (success (list string) str-len)))
     string-match))
 
-(define (p:char-from string)
-    (define (char-from-matcher data success)
-      (let ((choices (string->list string))
-	    (data-list (string->list data)))
-	(and (not (null? data-list))
-	     (memq (car data-list) choices)
-	     (success (list (car (string->list data))) 1))))
-    char-from-matcher)
+;;; Match single character that satisfies the predicate. Can be used
+;;; to create matcher for number, whitespace, alphanumeric, etc.
+(define (p:char-predicate char-predicate)
+  (define (char-predicate-matcher data success)
+      (and (> (string-length data) 0)
+	   (char-predicate (car (string->list data)))
+	   (success (list (substring data 0 1)) 1)))
+  char-predicate-matcher)
 
 (define (p:seq . args)
   (define (seq-match data success)
@@ -91,17 +91,6 @@
   repeat-match)
 |#
 
-;;; Convenience combinators
-
-(define (p:+ matcher)
-  (p:repeat matcher 1 #f))
-
-(define (p:? matcher)
-  (p:repeat matcher 0 1))
-
-(define (p:* matcher)
-  (p:repeat matcher 0 #f))
-
 ;;; Definition for named rule
 
 (define (p:rule name matcher)
@@ -126,6 +115,32 @@
                (success (f parse-tree)
                         num-consumed))))
     transform-matcher)
+
+(define (p:require f matcher)
+  (define (require-matcher data success)
+    (matcher data
+	     (lambda (parse-tree num-consumed)
+	       (and (f parse-tree)
+		    (success parse-tree num-consumed))))))
+
+
+;;; Convenience combinators
+(define (p:char-from string)
+  (let ((choices (string->list string)))
+    (p:char-predicate (lambda (char) (memq char choices)))))
+
+(define (p:char-not-from string)
+  (let ((choices (string->list string)))
+    (p:char-predicate (lambda (char) (not (memq char choices))))))
+
+(define (p:+ matcher)
+  (p:repeat matcher 1 #f))
+
+(define (p:? matcher)
+  (p:repeat matcher 0 1))
+
+(define (p:* matcher)
+  (p:repeat matcher 0 #f))
 
 ;;; Tests
 
@@ -250,14 +265,24 @@
 ;; ;Value: #f
 
 ((p:char-from "abc") "abc" try-match)
-;; ("parse-tree" (#\a))
+;; ("parse-tree" ("a"))
 ;; ;Value: #f
 
 ((p:char-from "abc") "bbc" try-match)
-;; ("parse-tree" (#\b))
+;; ("parse-tree" ("b"))
 ;; ;Value: #f
 
 ((p:char-from "abc") "xbc" try-match)
+;; ;Value: #f
+
+((p:char-not-from "abc") "abc" try-match)
+;; ;Value: #f
+
+((p:char-not-from "abc") "bbc" try-match)
+;; ;Value: #f
+
+((p:char-not-from "abc") "xbc" try-match)
+;; ("parse-tree" ("x"))
 ;; ;Value: #f
 
 (let ((pattern
