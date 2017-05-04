@@ -37,7 +37,7 @@
             (else (error "Should not get here (p:choice)")))))
   choice-match)
 
-(define (p:repeat pattern min max)
+(define (p:repeat matcher min max)
   (define (repeat-match data success)
     (let lp ((i 0)
              (cur-data data)
@@ -47,9 +47,9 @@
           (or (and (>= i min)
                    (success cur-parse-tree (- (string-length data)
                                               (string-length cur-data))))
-              (pattern cur-data
+              (matcher cur-data
                        (lambda (parse-tree num-consumed)
-                         ;; P:REPEAT has weird behavior when the base pattern
+                         ;; P:REPEAT has weird behavior when the base matcher
                          ;; matches an empty string.
                          ;; TODO clarify what the behavior *should* be.
 			 (define (loop-again)
