@@ -121,7 +121,8 @@
     (matcher data
 	     (lambda (parse-tree num-consumed)
 	       (and (f parse-tree)
-		    (success parse-tree num-consumed))))))
+		    (success parse-tree num-consumed)))))
+  require-matcher)
 
 
 ;;; Convenience combinators
@@ -141,4 +142,3 @@
 
 (define (p:* matcher)
   (p:repeat matcher 0 #f))
-

@@ -1,4 +1,10 @@
-(load "primitive")
+(load "primitives")
+
+;;; Tests
+
+(define (try-match parse-tree num-consumed)
+  (pp (list "parse-tree" parse-tree))
+  #f)
 
 #|
 
@@ -167,4 +173,16 @@
 ;; ("parse-tree" (test-rule (("a") ("d"))))
 ;; ;Value: #f
 
+((p:require
+  (lambda (parse-tree)
+    (> (string-length (car parse-tree)) 3))
+  (p:choice (p:string "h") (p:string "he") (p:string "hello")
+	    (p:string "hello kitty")))
+ "hello kitty :)"
+ try-match)
+;; ("parse-tree" ("hello"))
+;; ("parse-tree" ("hello kitty"))
+;; ;Value: #f
+
 |#
+
