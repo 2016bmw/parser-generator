@@ -184,5 +184,21 @@
 ;; ("parse-tree" ("hello kitty"))
 ;; ;Value: #f
 
+((p:separated-by (p:* (p:string " ")) #f (p:string "a") (p:string "b") (p:string "c")) "a    b        c" try-match)
+;; ("parse-tree" (("a") ("b") ("c")))
+;; ;Value: #f
+
+((p:separated-by (p:* (p:string " ")) #t (p:string "a") (p:string "b") (p:string "c")) "a    b        c" try-match)
+;; ("parse-tree" (("a") ((" ") (" ") (" ") (" ")) ("b") ((" ") (" ") (" ") (" ") (" ") (" ") (" ") (" ")) ("c")))
+;; ;Value: #f
+
+((p:separated-by (p:* (p:string " ")) #f (p:string "a") (p:string "b") (p:string "c")) "abc" try-match)
+;; ("parse-tree" (("a") ("b") ("c")))
+;; ;Value: #f
+
+((p:separated-by (p:* (p:string " ")) #t (p:string "a") (p:string "b") (p:string "c")) "abc" try-match)
+;; ("parse-tree" (("a") () ("b") () ("c")))
+;; ;Value: #f
+
 |#
 

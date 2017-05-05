@@ -108,6 +108,25 @@
     ((force matcher) data success))
   delayed-matcher)
 
+
+(define (p:separated-by separator include-in-parse-tree? . matchers)
+  (define (separate-list-with lst separator)
+    (if (or (null? lst) (null? (cdr lst)))
+	lst
+	(cons (car lst) (cons separator (separate-list-with (cdr lst) separator)))))
+  (define (skip-every-other-element lst)
+    (if (or (null? lst) (null? (cdr lst)))
+	lst
+	(cons (car lst) (skip-every-other-element (cddr lst)))))	   
+  (define (separated-matcher data success)
+    ((apply p:seq (separate-list-with matchers separator))
+     data
+     (if include-in-parse-tree?
+	 success
+	 (lambda (parse-tree num-consumed)
+	   (success (skip-every-other-element parse-tree) num-consumed)))))
+  separated-matcher)
+
 (define (p:transform f matcher)
   (define (transform-matcher data success)
     (matcher data
