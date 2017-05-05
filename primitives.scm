@@ -128,7 +128,6 @@
 		    (success parse-tree num-consumed)))))
   require-matcher)
 
-
 ;;; Convenience combinators
 (define (p:char-from string)
   (let ((choices (string->list string)))
@@ -146,3 +145,8 @@
 
 (define (p:* matcher)
   (p:repeat matcher 0 #f))
+
+;;; Parse tree functions
+
+;; TODO change this when we change parse-tree format
+(define (parse-tree-data parse-tree) parse-tree) 
