@@ -75,21 +75,6 @@
 				 #f
 				 (loop-again)))))))))
   repeat-match)
-#|
-                         (cond
-                          ((zero? num-consumed)
-                           (and (>= i min)
-                                (success (append cur-parse-tree (list parse-tree)) num-consumed)))
-                          ((positive? num-consumed)
-                           (lp (+ i 1)
-                               (substring cur-data num-consumed
-                                          (string-length cur-data))
-                               (append cur-parse-tree
-                                       (list parse-tree))))
-                          (else #f))))))))
-
-  repeat-match)
-|#
 
 ;;; Definition for named rule
 
