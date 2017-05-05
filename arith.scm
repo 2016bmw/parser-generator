@@ -1,9 +1,10 @@
 (load "primitives")
+(load "test-primitives")
 
 ;;; Arithmetic Grammar Example
 
 (define p:digit
-  (p:char-from "0123456789"))
+  (p:char-predicate char-numeric?))
 
 (define number-rule
   (p:rule 'number
