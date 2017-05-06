@@ -45,36 +45,47 @@
             (else (error "Should not get here (p:choice)")))))
   choice-match)
 
-(define (p:repeat matcher min max)
-  (define (repeat-match data success)
-    (let lp ((i 0)
-             (cur-data data)
-             (cur-parse-tree (list)))
-      (if (and max (> i max))
-          #f
-          (or (and (>= i min)
-                   (success cur-parse-tree (- (string-length data)
-                                              (string-length cur-data))))
-              (matcher cur-data
-                       (lambda (parse-tree num-consumed)
-                         ;; P:REPEAT has weird behavior when the base matcher
-                         ;; matches an empty string.
-                         ;; TODO clarify what the behavior *should* be.
-			 (define (loop-again)
-			   (lp (+ i 1)
-			       (substring cur-data num-consumed (string-length cur-data))
-			       (append cur-parse-tree (list parse-tree))))
+;;; P:REPEAT matches between MIN and MAX occurrences of the MATCHER, unbounded
+;;; if MAX is #f. If GREEDY is true, try to match as many occurrences as
+;;; possible. Otherwise, if GREEDY is #f or not provided, match as few as
+;;; occurrences as possible.
+(define (p:repeat matcher min max #!optional greedy)
+  (let ((greedy (if (default-object? greedy) #f greedy)))
+    (define (repeat-match data success)
+      (let lp ((i 0)
+               (cur-data data)
+               (cur-parse-tree (list)))
+        (define (try-base)
+          (matcher cur-data
+                   (lambda (parse-tree num-consumed)
+                     ;; P:REPEAT has weird behavior when the base matcher
+                     ;; matches an empty string.
+                     ;; TODO clarify what the behavior *should* be.
+                     (define (loop-again)
+                       (lp (+ i 1)
+                           (substring cur-data num-consumed (string-length cur-data))
+                           (append cur-parse-tree (list parse-tree))))
 
-			 (if (zero? num-consumed)
-			     (if (string=? cur-data data) ; haven't consumed any part of original string
-				 (if (>= (+ i 1) min)
-				     (success (append cur-parse-tree (list parse-tree)) num-consumed)
-				     (loop-again))
-				 #f) ; never try to put an empty string after non-empty matches
-			     (if (and (> i 0) (string=? cur-data data)) ; current match is not empty, but there has previously been at least one empty match
-				 #f
-				 (loop-again)))))))))
-  repeat-match)
+                     (if (zero? num-consumed)
+                         (if (string=? cur-data data) ; haven't consumed any part of original string
+                             (if (>= (+ i 1) min)
+                                 (success (append cur-parse-tree (list parse-tree)) num-consumed)
+                                 (loop-again))
+                             #f) ; never try to put an empty string after non-empty matches
+                         (if (and (> i 0) (string=? cur-data data)) ; current match is not empty, but there has previously been at least one empty match
+                             #f
+                             (loop-again))))))
+        (define (try-finish)
+          (and (>= i min)
+               (success cur-parse-tree (- (string-length data)
+                                          (string-length cur-data)))))
+        (if (and max (> i max))
+            #f
+            (if greedy
+                (or (try-base) (try-finish))
+                (or (try-finish) (try-base))
+                ))))
+    repeat-match))
 
 ;;; Definition for named rule
 

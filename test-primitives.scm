@@ -6,8 +6,6 @@
   (pp (list "parse-tree" parse-tree))
   #f)
 
-#|
-
 ((p:string "a") "a" try-match)
 ("parse-tree" ("a"))
 ;Value: #f                              ;
@@ -57,6 +55,20 @@
 ;; ("parse-tree" (("a") ("a")))
 ;; ;Value: #f
 
+;; Testing greediness parameter
+
+((p:repeat (p:string "a") 1 #f) "aaaba" try-match)
+;; ("parse-tree" (("a")))
+;; ("parse-tree" (("a") ("a")))
+;; ("parse-tree" (("a") ("a") ("a")))
+;; ;Value: #f
+
+((p:repeat (p:string "a") 1 #f #t) "aaaba" try-match)
+;; ("parse-tree" (("a") ("a") ("a")))
+;; ("parse-tree" (("a") ("a")))
+;; ("parse-tree" (("a")))
+;; ;Value: #f
+
 ((p:repeat (p:string "kitty") 1 #f) "kittykittykittykittyhellokitty" try-match)
 ;; ("parse-tree" (("kitty")))
 ;; ("parse-tree" (("kitty") ("kitty")))
@@ -90,8 +102,8 @@
 ;; ;Value: #f
 
 ((p:seq (p:repeat (p:choice (p:string "") (p:string "x")) 0 #f) (p:string "z")) "z" try-match)
-("parse-tree" (() ("z")))
-("parse-tree" ((("")) ("z")))
+;; ("parse-tree" (() ("z")))
+;; ("parse-tree" ((("")) ("z")))
 ;; ;Value: #f
 
 
@@ -199,6 +211,3 @@
 ((p:separated-by (p:* (p:string " ")) #t (p:string "a") (p:string "b") (p:string "c")) "abc" try-match)
 ;; ("parse-tree" (("a") () ("b") () ("c")))
 ;; ;Value: #f
-
-|#
-
