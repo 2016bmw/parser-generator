@@ -49,32 +49,35 @@
 ;;; if MAX is #f. If GREEDY is true, try to match as many occurrences as
 ;;; possible. Otherwise, if GREEDY is #f or not provided, match as few as
 ;;; occurrences as possible.
+;;;
+;;; If the empty string is a possible match for the base MATCHER, the empty string can 
+;;; occur at most MIN times in the parse tree for the repeat match. While this specification 
+;;; is only truly necessary for unbounded repeat intervals, it is applied to bounded intervals as 
+;;; well for the sake of consistency. With this constraint in place, unbounded intervals are still 
+;;; able to match the empty string, but cannot produce infinite parse trees and prevent matching 
+;;; from completing.
 (define (p:repeat matcher min max #!optional greedy)
   (let ((greedy (if (default-object? greedy) #f greedy)))
     (define (repeat-match data success)
       (let lp ((i 0)
                (cur-data data)
-               (cur-parse-tree (list)))
+               (cur-parse-tree (list))
+	       (num-empty-matches 0))
         (define (try-base)
           (matcher cur-data
                    (lambda (parse-tree num-consumed)
-                     ;; P:REPEAT has weird behavior when the base matcher
-                     ;; matches an empty string.
-                     ;; TODO clarify what the behavior *should* be.
-                     (define (loop-again)
-                       (lp (+ i 1)
-                           (substring cur-data num-consumed (string-length cur-data))
-                           (append cur-parse-tree (list parse-tree))))
+                     (let ((empty-match? (zero? num-consumed)))
+		       (define (loop-again)
+			 (lp (+ i 1)
+			     (substring cur-data num-consumed (string-length cur-data))
+			     (append cur-parse-tree (list parse-tree))
+			     (if empty-match?
+				 (+ num-empty-matches 1)
+				 num-empty-matches)))
 
-                     (if (zero? num-consumed)
-                         (if (string=? cur-data data) ; haven't consumed any part of original string
-                             (if (>= (+ i 1) min)
-                                 (success (append cur-parse-tree (list parse-tree)) num-consumed)
-                                 (loop-again))
-                             #f) ; never try to put an empty string after non-empty matches
-                         (if (and (> i 0) (string=? cur-data data)) ; current match is not empty, but there has previously been at least one empty match
-                             #f
-                             (loop-again))))))
+		       (if (and empty-match? (>= num-empty-matches min))
+			   #f
+			   (loop-again))))))
         (define (try-finish)
           (and (>= i min)
                (success cur-parse-tree (- (string-length data)
