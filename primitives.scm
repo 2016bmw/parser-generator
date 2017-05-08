@@ -11,9 +11,9 @@
 ;;; to create matcher for number, whitespace, alphanumeric, etc.
 (define (p:char-predicate char-predicate)
   (define (char-predicate-matcher data success)
-      (and (> (string-length data) 0)
-	   (char-predicate (car (string->list data)))
-	   (success (list (substring data 0 1)) 1)))
+      (and (positive? (string-length data))
+           (char-predicate (string-ref data 0))
+     (success (list (substring data 0 1)) 1)))
   char-predicate-matcher)
 
 (define (p:seq . args)
