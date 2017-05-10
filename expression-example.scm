@@ -17,8 +17,7 @@
 		 whitespace-matcher)))
     ;; Only take the non-whitespace part
     (p:transform
-     (lambda (parse-tree)
-       (cadr (parse-tree-data parse-tree)))
+     get-tail-transformer
      ignore-whitespace-matcher)))	
 
 (define (p:*-skip-whitespace matcher)
@@ -29,6 +28,8 @@
 ;;; Grammar Rules
 
 #|
+number   ::= [0-9]+
+var      ::= [a-zA-Z]+
 atom     ::= number | var | '(' sum ')'
 product  ::= atom ('*' atom)*
 sum      ::= product ('*' product)*
@@ -76,7 +77,6 @@ sum      ::= product ('*' product)*
 (define get-tail-transformer
   (lambda (parse-tree)
     (cadr (parse-tree-data parse-tree))))
-
 
 (define product-rule
   (p:rule 'product
@@ -128,8 +128,12 @@ sum      ::= product ('*' product)*
 ;; Value 41: (sum (product (number . 1) (number . 2) (number
 ;; . 2) (sum (product (number . 3)) (product (number
 ;; . 4)) (product (number . 5)))) (product (var . x)))
-
+(pp (parse-expression "1 + 2 * (3 + x) + ((4)) * 5"))
+;; (sum (product (number . 1))
+;;      (product (number . 2) (sum (product (number . 3)) (product (var . x))))
+;;      (product (sum (product (sum (product (number . 4))))) (number . 5)))
 |#
+(simplify (parse-expression "1 + 2 * (3 + x) + ((4)) * 5") '())
 
 (define (expr-tree-rule expr-tree) (car expr-tree))
 (define (expr-tree-value expr-tree) (cdr expr-tree))
@@ -177,7 +181,6 @@ sum      ::= product ('*' product)*
 	    (cons 'product simplified-parts)))))
 
 (define (simplify expr-tree env)
-  (pp (list "simplifying" expr-tree))
   (cond ((number-node? expr-tree)
 	 (simplify-number expr-tree env))
 	((var-node? expr-tree)
@@ -225,5 +228,7 @@ sum      ::= product ('*' product)*
 (simplify (parse-expression "1 + x*3*(y + 3*(1 + x)) + 4*(((z)))")
 	  '((x 4) (z 6)))
 ;Value 71: (sum (number . 1) (product (number . 4) (number . 3) (sum (var . y) (number . 15))) (number . 24))
+
+(simplify (parse-expression "1 + 2 * (3 + x) + ((4)) * 5") '())
 
 |#
