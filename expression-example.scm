@@ -29,21 +29,41 @@
 ;;; Grammar Rules
 
 #|
-number   ::= [0-9]+
+decimal  ::= [0-9]+ '.'? [0-9]*
+           | '.' [0-9]+
+scinot   ::= decimal ('E' | 'e') '-'? [0-9]+
+rational ::= [0-9]+ '/' [0-9]+
+
+number   ::= '-'? (decimal | scinot | rational)
 var      ::= [a-zA-Z]+
 atom     ::= number | var | '(' sum ')'
 product  ::= atom ('*' atom)*
 sum      ::= product ('*' product)*
 |#
 
+(define digit-matcher (p:char-predicate char-numeric?))
+(define integer-matcher (p:+ digit-matcher))
+
+(define decimal-matcher
+  (p:choice
+   (p:seq integer-matcher (p:? (p:string ".")) (p:? integer-matcher))
+   (p:seq (p:string ".") integer-matcher)))
+
+(define scinot-matcher
+  (p:seq decimal-matcher (p:char-from "eE") (p:? (p:string "-"))
+	 integer-matcher))
+
+(define rational-matcher
+  (p:seq integer-matcher (p:string "/") integer-matcher))
+
 (define number-rule
   (p:rule 'number
           (p:transform
            (lambda (parse-tree)
-	     (let* ((data (parse-tree-data parse-tree))
-		    (string (apply string-append (apply append data))))
-               (string->number string)))
-           (p:+ (p:char-predicate char-numeric?)))))
+	     (string->number (parse-tree-text parse-tree)))
+	   (p:seq (p:? (p:string "-"))
+		  (p:choice decimal-matcher scinot-matcher
+			    rational-matcher)))))
 
 (define var-rule
   (p:rule 'var
@@ -118,6 +138,47 @@ sum      ::= product ('*' product)*
    (lambda (cc) (expression-parser expression cc))))
 
 #|
+(parse-expression "1")
+;Value 60: (sum (product (number . 1)))
+
+(parse-expression "001")
+;Value 60: (sum (product (number . 1)))
+
+(parse-expression "123.")
+;Value 66: (sum (product (number . 123.)))
+
+(parse-expression ".123")
+;Value 67: (sum (product (number . .123)))
+
+(parse-expression "-.123")
+;Value 77: (sum (product (number . -.123)))
+
+(parse-expression "-0.123")
+;Value 78: (sum (product (number . -.123)))
+
+(parse-expression "123.456")
+;Value 68: (sum (product (number . 123.456)))
+
+(parse-expression "-123.456")
+;Value 76: (sum (product (number . -123.456)))
+
+(parse-expression "123.456.")
+; #f
+
+(parse-expression "123.456E2")
+;Value 70: (sum (product (number . 12345.6)))
+
+(parse-expression "-2.5e-2")
+;Value 79: (sum (product (number . -.025)))
+
+(parse-expression "12/23")
+;Value 82: (sum (product (number . 12/23)))
+
+(parse-expression "-12/23")
+;Value 83: (sum (product (number . -12/23)))
+
+(parse-expression "-0/12")
+;Value 91: (sum (product (number . 0)))
 
 (parse-expression "sdfsdf  sdfd")
 ;; Value: #f
@@ -203,8 +264,8 @@ sum      ::= product ('*' product)*
 (simplify (parse-expression "y") '((x 4)))
 ;Value 50: (var . y)
 
-(simplify (parse-expression "1 + 2") '((x 4)))
-;Value 57: (number . 3)
+(simplify (parse-expression "1+-2") '((x 4)))
+;Value 57: (number . -1)
 
 (simplify (parse-expression "2 * 3") '((x 4)))
 ;Value 58: (number . 6)
@@ -212,24 +273,24 @@ sum      ::= product ('*' product)*
 (simplify (parse-expression "1 + 2 * 3 + 4") '((x 4)))
 ;Value 59: (number . 11)
 
-(simplify (parse-expression "1 + x * 3 + 4") '((x 4)))
-;Value 62: (number . 17)
+(simplify (parse-expression "1 + x * -3 + 4") '((x 4)))
+;Value 62: (number . -7)
 
 (simplify (parse-expression "1 + 2 * 3 + x") '((x 4)))
 ;Value 59: (number . 11)
 
-(simplify (parse-expression "1 + x*3 + y") '((x 4)))
-;Value 65: (sum (number . 1) (number . 12) (var . y))
+(simplify (parse-expression "1 + x*-3 + y") '((x 4)))
+;Value 65: (sum (number . 1) (number . -12) (var . y))
 
-(simplify (parse-expression "1 + x*3*(y + 3*(1 + x)) + 4*(((z)))")
+(simplify (parse-expression ".1 + x*3E2*(y + 3*(-1 + x)) + 4.23*(((z)))")
 	  '((x 4) (y 5) (z 6)))
-;Value 70: (number . 265)
+;Value 70: (number . 16825.48)
 
-(simplify (parse-expression "1 + x*3*(y + 3*(1 + x)) + 4*(((z)))")
+(simplify (parse-expression ".1 + x*3E2*(y + 3*(-1 + x)) + 4.23*(((z)))")
 	  '((x 4) (z 6)))
-;Value 71: (sum (number . 1) (product (number . 4) (number . 3) (sum (var . y) (number . 15))) (number . 24))
+;Value 93: (sum (number . .1) (product (number . 4) (number . 300.) (sum (var . y) (number . 9))) (number . 25.380000000000003))
 
-(simplify (parse-expression "1 + 2 * (3 + x) + ((4)) * 5") '())
-;Value 58: (sum (number . 1) (product (number . 2) (sum (number . 3) (var . x))) (number . 20))
+(simplify (parse-expression ".1 + x*3E2*(y + 3*(-1 + x)) + 4.23*(((z)))") '())
+;Value 96: (sum (number . .1) (product (var . x) (number . 300.) (sum (var . y) (product (number . 3) (sum (number . -1) (var . x))))) (product (number . 4.23) (var . z)))
 
 |#
