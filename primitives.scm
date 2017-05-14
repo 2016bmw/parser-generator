@@ -1,10 +1,15 @@
+(load "tree")
+
 (define (p:string string)
   (let ((str-len (string-length string)))
     (define (string-match data success)
       ;; (pp (list "string-match" string data))
       (and (>= (string-length data) str-len)
            (string=? string (substring data 0 str-len))
-           (success (list string) str-len)))
+           (success (make-parse-tree (list string)
+				     string
+				     '())
+		    str-len)))
     string-match))
 
 ;;; Match single character that satisfies the predicate. Can be used
@@ -13,25 +18,27 @@
   (define (char-predicate-matcher data success)
       (and (positive? (string-length data))
            (char-predicate (string-ref data 0))
-     (success (list (substring data 0 1)) 1)))
+	   (success (make-parse-tree (list (substring data 0 1))
+				     (substring data 0 1)
+				     '())
+		    1)))
   char-predicate-matcher)
 
 (define (p:seq . args)
   (define (seq-match data success)
     (let lp ((lst args)
              (cur-data data)
-             (cur-parse-tree (list)))
-      ;; (pp (list "data " cur-data))
+             (cur-children (list)))
       (cond ((pair? lst)
              ((car lst) cur-data
               (lambda (parse-tree num-consumed)
-                ;; (pp parse-tree)
-                ;; (pp num-consumed)
                 (lp (cdr lst)
                     (substring cur-data num-consumed (string-length cur-data))
-                    (cons parse-tree cur-parse-tree)))))
+                    (cons parse-tree cur-children)))))
             ((null? lst)
-             (success (reverse cur-parse-tree) (- (string-length data) (string-length cur-data))))
+             (success
+	      (build-node-from-children-stack cur-children)
+	      (- (string-length data) (string-length cur-data))))
             (else (error "Should not get here!")))))
   seq-match)
 
@@ -61,7 +68,7 @@
     (define (repeat-match data success)
       (let lp ((i 0)
                (cur-data data)
-               (cur-parse-tree (list))
+               (cur-children (list))
 	       (num-empty-matches 0))
         (define (try-base)
           (matcher cur-data
@@ -70,18 +77,18 @@
 		       (define (loop-again)
 			 (lp (+ i 1)
 			     (substring cur-data num-consumed (string-length cur-data))
-			     (append cur-parse-tree (list parse-tree))
+			     (cons parse-tree cur-children)
 			     (if empty-match?
 				 (+ num-empty-matches 1)
 				 num-empty-matches)))
-
 		       (if (and empty-match? (>= num-empty-matches min))
 			   #f
 			   (loop-again))))))
         (define (try-finish)
           (and (>= i min)
-               (success cur-parse-tree (- (string-length data)
-                                          (string-length cur-data)))))
+               (success
+		(build-node-from-children-stack cur-children)
+		(- (string-length data) (string-length cur-data)))))
         (if (and max (> i max))
             #f
             (if greedy
@@ -96,7 +103,11 @@
   (define (rule-matcher data success)
     (matcher data
              (lambda (parse-tree num-consumed)
-               (success (cons name parse-tree) num-consumed))))
+               (success (make-parse-tree
+			 (cons name (parse-tree-data parse-tree))
+			 (parse-tree-text parse-tree)
+			 parse-tree)
+			num-consumed))))
   rule-matcher)
 
 ;; P:DELAYED takes a promise that will return a matcher, and returns a matcher
@@ -123,15 +134,23 @@
      (if include-in-parse-tree?
 	 success
 	 (lambda (parse-tree num-consumed)
-	   (success (skip-every-other-element parse-tree) num-consumed)))))
+	   (success
+	    (make-parse-tree
+	     (skip-every-other-element (parse-tree-data parse-tree))
+	     (parse-tree-text parse-tree)
+	     (parse-tree-children parse-tree))
+	    num-consumed)))))
   separated-matcher)
 
 (define (p:transform f matcher)
   (define (transform-matcher data success)
     (matcher data
              (lambda (parse-tree num-consumed)
-               (success (f parse-tree)
-                        num-consumed))))
+               (success
+		(make-parse-tree (f parse-tree)
+				 (parse-tree-text parse-tree)
+				 (parse-tree-children parse-tree))
+		num-consumed))))
     transform-matcher)
 
 (define (p:require f matcher)
@@ -159,8 +178,3 @@
 
 (define (p:* matcher)
   (p:repeat matcher 0 #f))
-
-;;; Parse tree functions
-
-;; TODO change this when we change parse-tree format
-(define (parse-tree-data parse-tree) parse-tree) 

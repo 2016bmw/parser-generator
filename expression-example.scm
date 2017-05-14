@@ -1,3 +1,4 @@
+(load "tree")
 (load "primitives")
 (load "test-primitives")
 
@@ -110,7 +111,7 @@ sum      ::= product ('*' product)*
      expression
      (lambda (parse-tree num-consumed)
        (and (= num-consumed (string-length expression))
-	    (success parse-tree))))))
+	    (success (parse-tree-data parse-tree)))))))
 
 (define (parse-expression expression)
   (call-with-current-continuation
@@ -133,7 +134,6 @@ sum      ::= product ('*' product)*
 ;;      (product (number . 2) (sum (product (number . 3)) (product (var . x))))
 ;;      (product (sum (product (sum (product (number . 4))))) (number . 5)))
 |#
-(simplify (parse-expression "1 + 2 * (3 + x) + ((4)) * 5") '())
 
 (define (expr-tree-rule expr-tree) (car expr-tree))
 (define (expr-tree-value expr-tree) (cdr expr-tree))
@@ -230,5 +230,6 @@ sum      ::= product ('*' product)*
 ;Value 71: (sum (number . 1) (product (number . 4) (number . 3) (sum (var . y) (number . 15))) (number . 24))
 
 (simplify (parse-expression "1 + 2 * (3 + x) + ((4)) * 5") '())
+;Value 58: (sum (number . 1) (product (number . 2) (sum (number . 3) (var . x))) (number . 20))
 
 |#
