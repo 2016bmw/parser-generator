@@ -14,7 +14,7 @@ A parser is something that takes an input string and tries to match it against s
 
 A parser generator, then, is a tool that takes user-defined grammar and generates a parser. Parser generators are convenient because they remove the need to hand-write a parser for every specific use case one might have. Instead, a programmer can simply write up the grammar in an easily expressible format that describes the domain of interest, and the parser generator transforms the grammar into an associated parser. 
 
-This project is a parser generator that allows users to define grammar using scheme expressions. For example, a grammar to match integers, variables can be defined as follows:
+This project is a parser generator that allows users to define grammar using scheme expressions. For example, a grammar to match integers can be defined as follows:
 
 ```
 ;;; number ::= [0-9]+
@@ -22,7 +22,7 @@ This project is a parser generator that allows users to define grammar using sch
   (p:rule 'number (p:+ (p:char-predicate char-numeric?))))
 ```
 
-Our parser generator also allow user to transform the parser tree as they are being generated. When seeing a string that looks like a number, the `number-rule` presented above generates a tree where with each node being a digit string. For example, "123" would generate a tree with three leaf nodes:
+Our parser generator also allows user to transform the parse tree as it is being generated. When seeing a string that looks like a number, the `number-rule` presented above generates a tree where with each node being a digit string. For example, "123" would generate a tree with three leaf nodes:
 
 ```
     (+)
@@ -58,4 +58,5 @@ var      ::= [a-zA-Z]+
 atom     ::= number | var | '(' sum ')'
 product  ::= atom ('*' atom)*
 sum      ::= product ('*' product)*
+|#
 ```
